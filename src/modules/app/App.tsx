@@ -1,6 +1,7 @@
 import { useAppStore } from '../../state/store'
 import { RiskGrid } from '../risk/RiskGrid'
 import { MapPanel } from '../map/MapPanel'
+import { Card } from '../../components/Card'
 
 function App() {
   const { loading, error, setUserLocation } = useAppStore()
@@ -23,16 +24,21 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-gray-50">
+      {/* Sticky Header */}
+      <header className="sticky top-0 z-40 bg-gray-900 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <h1 className="text-2xl font-bold text-gray-900">KystVern</h1>
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">K</span>
+              </div>
+              <h1 className="text-xl font-bold text-white">KystVern AI</h1>
+            </div>
             <div className="flex space-x-3">
               <button
                 onClick={handleMyLocation}
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 My Location
               </button>
@@ -72,16 +78,20 @@ function App() {
           </div>
         )}
 
-        {/* Responsive Grid Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Risk Grid - Left Column */}
-          <div className="lg:col-span-1">
-            <RiskGrid />
+        {/* Two-Panel Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Panel - Risk & Alerts */}
+          <div className="space-y-6">
+            <Card title="Risk & Alerts">
+              <RiskGrid />
+            </Card>
           </div>
 
-          {/* Map Panel - Right Column */}
-          <div className="lg:col-span-2">
-            <MapPanel />
+          {/* Right Panel - Map & Tools */}
+          <div className="space-y-6">
+            <Card title="Map & Tools">
+              <MapPanel />
+            </Card>
           </div>
         </div>
       </div>
