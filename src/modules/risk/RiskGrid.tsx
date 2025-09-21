@@ -1,47 +1,26 @@
 import { useAppStore } from '../../state/store'
-import { scoreRisk, badgeClasses, type RiskLevel } from '../../utils/risk'
-import { getForecast } from '../../lib/met'
+import { scoreRisk, badgeClasses } from '../../utils/risk'
 
 export function RiskGrid() {
-  const { cities, loading, error, setLoading, setError, updateCityWeather } = useAppStore()
+  const { cities, userLocation, loading, error, lastUpdated, refreshAll } = useAppStore()
 
-  const refreshAll = async () => {
-    setLoading(true)
-    setError(null)
-    
-    try {
-      const promises = cities.map(async (city) => {
-        try {
-          const forecast = await getForecast(city.lat, city.lng)
-          const riskLevel = scoreRisk({
-            wind: forecast.wind,
-            gust: forecast.gust ?? 0,
-            precip: forecast.precip
-          })
-          updateCityWeather(city.name, {
-            time: new Date().toISOString(),
-            wind_speed: forecast.wind,
-            wind_gust: forecast.gust ?? 0,
-            precipitation: forecast.precip,
-            temperature: 0 // Not used in current implementation
-          })
-        } catch (err) {
-          console.error(`Failed to fetch weather for ${city.name}:`, err)
-        }
-      })
-      
-      await Promise.all(promises)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to refresh weather data')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const allLocations = [
+    ...cities,
+    ...(userLocation ? [{ ...userLocation, weather: undefined }] : [])
+  ]
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">Risk Outlook</h2>
+    <div className="space-y-4">
+      {/* Header with Refresh and Status */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">Risk Assessment</h3>
+          {lastUpdated && (
+            <p className="text-xs text-gray-500">
+              Last updated: {new Date(lastUpdated).toLocaleTimeString()}
+            </p>
+          )}
+        </div>
         <button
           onClick={refreshAll}
           disabled={loading}
@@ -51,12 +30,14 @@ export function RiskGrid() {
         </button>
       </div>
 
+      {/* Error Banner */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
+        <div className="bg-red-50 border border-red-200 rounded-md p-3">
           <p className="text-red-800 text-sm">{error}</p>
         </div>
       )}
 
+      {/* Loading Spinner */}
       {loading && (
         <div className="flex items-center justify-center py-4">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
@@ -64,38 +45,39 @@ export function RiskGrid() {
         </div>
       )}
 
+      {/* Cities Grid */}
       <div className="space-y-3">
-        {cities.map((city) => {
-          const riskLevel = city.weather ? scoreRisk({
-            wind: city.weather.wind_speed,
-            gust: city.weather.wind_gust,
-            precip: city.weather.precipitation
+        {allLocations.map((location) => {
+          const riskLevel = location.weather ? scoreRisk({
+            wind: location.weather.wind_speed,
+            gust: location.weather.wind_gust,
+            precip: location.weather.precipitation
           }) : 'low'
 
           return (
-            <div key={city.name} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+            <div key={location.name} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
               <div className="flex justify-between items-start mb-2">
-                <h3 className="font-medium text-gray-900">{city.name}</h3>
+                <h4 className="font-medium text-gray-900">{location.name}</h4>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${badgeClasses(riskLevel)}`}>
                   {riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1)}
                 </span>
               </div>
               
-              {city.weather ? (
+              {location.weather ? (
                 <div className="text-sm text-gray-600 space-y-1">
                   <div className="flex justify-between">
                     <span>Wind:</span>
-                    <span className="font-medium">{city.weather.wind_speed.toFixed(1)} m/s</span>
+                    <span className="font-medium">{location.weather.wind_speed.toFixed(1)} m/s</span>
                   </div>
-                  {city.weather.wind_gust > 0 && (
+                  {location.weather.wind_gust > 0 && (
                     <div className="flex justify-between">
                       <span>Gust:</span>
-                      <span className="font-medium">{city.weather.wind_gust.toFixed(1)} m/s</span>
+                      <span className="font-medium">{location.weather.wind_gust.toFixed(1)} m/s</span>
                     </div>
                   )}
                   <div className="flex justify-between">
                     <span>Precip:</span>
-                    <span className="font-medium">{city.weather.precipitation.toFixed(1)} mm</span>
+                    <span className="font-medium">{location.weather.precipitation.toFixed(1)} mm</span>
                   </div>
                 </div>
               ) : (
