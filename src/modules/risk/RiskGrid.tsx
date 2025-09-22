@@ -57,20 +57,31 @@ export function RiskGrid() {
 
       <div className="space-y-3">
         {allLocations.map((location) => {
-          const riskLevel = location.weather ? scoreRisk({
-            wind: location.weather.wind,
-            gust: location.weather.gust ?? 0,
-            precip: location.weather.precip
-          }) : 'low'
+          const weather = location.weather
+          const riskLevel = location.riskLevel ?? (weather
+            ? scoreRisk({
+                wind: weather.wind,
+                gust: weather.gust ?? weather.wind,
+                precip: weather.precip
+              })
+            : 'low')
+          const nearest = location.name === 'My Location' ? location.nearestCity : undefined
+          const validAt = weather?.timeISO
+            ? new Date(weather.timeISO).toLocaleTimeString('en-GB', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+              })
+            : '\u2014'
 
           return (
             <div key={location.name} className="bg-white border border-gray-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <h4 className="font-medium text-gray-900">{location.name}</h4>
-                  {location.nearestCity && (
+                  {nearest && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Nearest city: {location.nearestCity.name} • {location.nearestCity.distanceKm.toFixed(1)} km
+                      Nearest city: {nearest.name} \u2022 {nearest.distanceKm.toFixed(1)} km
                     </p>
                   )}
                 </div>
@@ -82,28 +93,19 @@ export function RiskGrid() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-gray-500">Wind:</span>
-                  <span className="ml-2 font-medium">{fmt1(location.weather?.wind)} m/s</span>
+                  <span className="ml-2 font-medium">{fmt1(weather?.wind)} m/s</span>
                 </div>
                 <div>
                   <span className="text-gray-500">Gust:</span>
-                  <span className="ml-2 font-medium">{fmt1(location.weather?.gust)} m/s</span>
+                  <span className="ml-2 font-medium">{fmt1(weather?.gust)} m/s</span>
                 </div>
                 <div>
                   <span className="text-gray-500">Precip:</span>
-                  <span className="ml-2 font-medium">{fmt1(location.weather?.precip)} mm</span>
+                  <span className="ml-2 font-medium">{fmt1(weather?.precip)} mm</span>
                 </div>
                 <div>
                   <span className="text-gray-500">Valid at:</span>
-                  <span className="ml-2 font-medium">
-                    {location.weather?.timeISO 
-                      ? new Date(location.weather.timeISO).toLocaleTimeString('en-US', { 
-                          hour: '2-digit', 
-                          minute: '2-digit',
-                          hour12: false 
-                        })
-                      : '—'
-                    }
-                  </span>
+                  <span className="ml-2 font-medium">{validAt}</span>
                 </div>
               </div>
             </div>
