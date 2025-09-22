@@ -130,29 +130,45 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   generateAlerts: () => {
     const state = get()
-    const newAlerts: Alert[] = []
-    
-    state.cities.forEach(city => {
-      if (city.weather) {
-        const riskLevel = scoreRisk({
-          wind: city.weather.wind,
-          gust: city.weather.gust ?? 0,
-          precip: city.weather.precip
-        })
-        
-        if (riskLevel === 'high' || riskLevel === 'severe') {
-          newAlerts.push({
-            id: `${city.name}-${Date.now()}`,
-            city: city.name,
-            level: riskLevel,
-            message: `${city.name}: ${riskLevel.toUpperCase()} risk - Wind: ${city.weather.wind.toFixed(1)} m/s, Precip: ${city.weather.precip.toFixed(1)} mm`,
-            timestamp: new Date().toISOString()
-          })
-        }
+    const locations = [
+      ...state.cities,
+      ...(state.userLocation ? [state.userLocation] : [])
+    ]
+
+    const alerts = locations.reduce<Alert[]>((acc, location) => {
+      const weather = location.weather
+      if (!weather) {
+        return acc
       }
+
+      const riskLevel = location.riskLevel ?? scoreRisk({
+        wind: weather.wind,
+        gust: weather.gust ?? weather.wind,
+        precip: weather.precip
+      })
+
+      if (riskLevel !== "high" && riskLevel !== "severe") {
+        return acc
+      }
+
+      acc.push({
+        id: `${location.name}-${weather.timeISO ?? Date.now()}`,
+        city: location.name,
+        level: riskLevel,
+        message: `${location.name}: ${riskLevel.toUpperCase()} risk - Wind: ${weather.wind.toFixed(1)} m/s, Precip: ${weather.precip.toFixed(1)} mm`,
+        timestamp: weather.timeISO ?? new Date().toISOString()
+      })
+      return acc
+    }, [])
+
+    alerts.sort((a, b) => {
+      if (a.level !== b.level) {
+        return a.level === "severe" ? -1 : 1
+      }
+      return b.timestamp.localeCompare(a.timestamp)
     })
-    
-    set({ alerts: newAlerts })
+
+    set({ alerts })
   }
 }))
 
@@ -183,3 +199,5 @@ export const prependMyLocation = async (lat: number, lon: number) => {
   
   setUserLocation(userLocation)
 }
+
+
