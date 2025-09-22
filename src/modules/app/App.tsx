@@ -1,4 +1,4 @@
-import { useAppStore } from '../../state/store'
+import { useAppStore, prependMyLocation } from '../../state/store'
 import { RiskGrid } from '../risk/RiskGrid'
 import { MapPanel } from '../map/MapPanel'
 import { AlertPanel } from '../alerts/AlertPanel'
@@ -10,18 +10,14 @@ import { Card } from '../../components/Card'
 import { useState } from 'react'
 
 function App() {
-  const { loading, error, setUserLocation } = useAppStore()
+  const { loading, error } = useAppStore()
   const [activeTab, setActiveTab] = useState('overview')
 
   const handleMyLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation({
-            name: 'My Location',
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          })
+          prependMyLocation(position.coords.latitude, position.coords.longitude)
         },
         (error) => {
           console.error('Error getting location:', error)
