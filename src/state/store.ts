@@ -73,11 +73,19 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!c.nearestCity) return c.name
     return `${c.nearestCity.name} area • ${c.nearestCity.distanceKm.toFixed(1)} km`
   },
-  updateCityWeather: (cityName, weather) => set((state) => ({
-    cities: state.cities.map(city => 
-      city.name === cityName ? { ...city, weather } : city
-    )
-  })),
+  updateCityWeather: (cityName, weather) => set((state) => {
+    const riskLevel = scoreRisk({
+      wind: weather.wind,
+      gust: weather.gust ?? weather.wind,
+      precip: weather.precip
+    })
+    
+    return {
+      cities: state.cities.map(city =>
+        city.name === cityName ? { ...city, weather, riskLevel } : city
+      )
+    }
+  }),
   refreshAll: async () => {
     const state = get()
     set({ loading: true, error: null })
@@ -150,17 +158,17 @@ export const useAppStore = create<AppState>((set, get) => ({
 
 // Add prependMyLocation function
 export const prependMyLocation = async (lat: number, lon: number) => {
-  const { setUserLocation, cities } = useAppStore.getState()
+  const { setUserLocation } = useAppStore.getState()
   
   // Find nearest city
-  const nearest = nearestCity(lat, lon, cities)
+  const nearest = nearestCity(lat, lon, CITIES)
   
   // Fetch forecast
   const forecast = await getForecast(lat, lon)
-  const riskLevel = scoreRisk({ 
-    wind: forecast.wind, 
-    gust: forecast.gust || forecast.wind * 1.3, 
-    precip: forecast.precip 
+  const riskLevel = scoreRisk({
+    wind: forecast.wind,
+    gust: forecast.gust ?? forecast.wind,
+    precip: forecast.precip
   })
   
   // Create user location with nearest city info

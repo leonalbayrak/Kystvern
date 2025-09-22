@@ -1,33 +1,49 @@
-export function haversineKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
-  const R = 6371 // Earth's radius in kilometers
-  const dLat = (b.lat - a.lat) * Math.PI / 180
-  const dLon = (b.lon - a.lon) * Math.PI / 180
-  const lat1 = a.lat * Math.PI / 180
-  const lat2 = b.lat * Math.PI / 180
+const EARTH_RADIUS_KM = 6371
 
-  const a1 = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2)
-  const c = 2 * Math.atan2(Math.sqrt(a1), Math.sqrt(1 - a1))
+const toRadians = (degrees: number): number => (degrees * Math.PI) / 180
 
-  return R * c
+export const haversineKm = (
+  a: { lat: number; lon: number },
+  b: { lat: number; lon: number }
+): number => {
+  const dLat = toRadians(b.lat - a.lat)
+  const dLon = toRadians(b.lon - a.lon)
+  const lat1 = toRadians(a.lat)
+  const lat2 = toRadians(b.lat)
+
+  const sinHalfLat = Math.sin(dLat / 2)
+  const sinHalfLon = Math.sin(dLon / 2)
+
+  const h = sinHalfLat * sinHalfLat + Math.cos(lat1) * Math.cos(lat2) * sinHalfLon * sinHalfLon
+  const c = 2 * Math.atan2(Math.sqrt(h), Math.sqrt(Math.max(0, 1 - h)))
+
+  return EARTH_RADIUS_KM * c
 }
 
-export function nearestCity(
-  lat: number, 
-  lon: number, 
+export const nearestCity = (
+  lat: number,
+  lon: number,
   cities: { name: string; lat: number; lng: number }[]
-): { name: string; distanceKm: number } {
-  let nearest = cities[0]
-  let minDistance = haversineKm({ lat, lon }, { lat: nearest.lat, lon: nearest.lng })
+): { name: string; distanceKm: number } | undefined => {
+  if (!Array.isArray(cities) || cities.length === 0) {
+    return undefined
+  }
 
-  for (let i = 1; i < cities.length; i++) {
+  const origin = { lat, lon }
+  let closest = cities[0]
+  let minDistance = haversineKm(origin, { lat: closest.lat, lon: closest.lng })
+
+  for (let i = 1; i < cities.length; i += 1) {
     const city = cities[i]
-    const distance = haversineKm({ lat, lon }, { lat: city.lat, lon: city.lng })
+    const distance = haversineKm(origin, { lat: city.lat, lon: city.lng })
     if (distance < minDistance) {
       minDistance = distance
-      nearest = city
+      closest = city
     }
   }
 
-  return { name: nearest.name, distanceKm: minDistance }
+  return {
+    name: closest.name,
+    distanceKm: minDistance
+  }
 }
